@@ -115,19 +115,28 @@ jobs:
     # repo's secrets), and only once EXE_DEV_HOST is actually configured -
     # so this job quietly skips (instead of failing) on a fork or before
     # exe.dev is set up, rather than putting a red X on every push to main.
+    #
+    # Note: a job-level `if:` can only see the `vars` context, not
+    # `secrets` (GitHub Actions rejects `secrets.*` there with "Unrecognized
+    # named-value: 'secrets'"), so the presence check below uses the
+    # non-sensitive EXE_DEV_HOST repository VARIABLE rather than a secret.
+    # None of host/user/path/port are actually sensitive - only the SSH
+    # private key is - so those four are plain repository variables
+    # (Settings -> Secrets and variables -> Actions -> Variables tab) and
+    # only EXE_DEV_SSH_KEY is a secret.
     if: |
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      secrets.EXE_DEV_HOST != ''
+      vars.EXE_DEV_HOST != ''
     environment: exe-dev
     steps:
       - name: SSH into exe.dev VM and run the deploy script
         uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.EXE_DEV_HOST }}
-          username: ${{ secrets.EXE_DEV_USER }}
+          host: ${{ vars.EXE_DEV_HOST }}
+          username: ${{ vars.EXE_DEV_USER }}
           key: ${{ secrets.EXE_DEV_SSH_KEY }}
-          port: ${{ secrets.EXE_DEV_PORT || '22' }}
+          port: ${{ vars.EXE_DEV_PORT || '22' }}
           script_stop: true
           script: |
-            cd ${{ secrets.EXE_DEV_DEPLOY_PATH }}
+            cd ${{ vars.EXE_DEV_DEPLOY_PATH }}
             ./scripts/deploy.sh
