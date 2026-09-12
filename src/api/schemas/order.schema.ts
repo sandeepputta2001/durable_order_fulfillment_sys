@@ -49,3 +49,11 @@ export const getOrderParamsSchema = {
     id: { type: 'string', minLength: 1 },
   },
 } as const;
+
+export const listOrdersQuerySchema = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    limit: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
+  },
+} as const;

@@ -85,6 +85,50 @@ describe('orders API', () => {
     expect(response.statusCode).toBe(404);
   });
 
+  it('lists orders newest-first', async () => {
+    const first = `order-${randomUUID()}`;
+    const second = `order-${randomUUID()}`;
+    for (const orderId of [first, second]) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/orders',
+        payload: {
+          orderId,
+          customerId: 'customer-list-test',
+          items: [{ productId: 'product-1', quantity: 1 }],
+        },
+      });
+      expect(response.statusCode).toBe(201);
+    }
+
+    const response = await app.inject({ method: 'GET', url: '/orders' });
+    expect(response.statusCode).toBe(200);
+    const { orders } = response.json();
+    expect(orders.length).toBeGreaterThanOrEqual(2);
+    // Newest first.
+    expect(orders[0].id).toBe(second);
+    expect(orders[1].id).toBe(first);
+  });
+
+  it('caps the orders list at the requested limit', async () => {
+    for (let i = 0; i < 3; i += 1) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/orders',
+        payload: {
+          orderId: `order-${randomUUID()}`,
+          customerId: 'customer-limit-test',
+          items: [{ productId: 'product-1', quantity: 1 }],
+        },
+      });
+      expect(response.statusCode).toBe(201);
+    }
+
+    const response = await app.inject({ method: 'GET', url: '/orders?limit=2' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().orders).toHaveLength(2);
+  });
+
   it('is idempotent for a duplicate orderId: does not start a second workflow', async () => {
     const { startOrderWorkflow } = await import('../../src/api/temporal-client');
     const orderId = `order-${randomUUID()}`;

@@ -166,6 +166,11 @@ curl -X POST http://localhost:8085/orders \
 curl http://localhost:8085/orders/<ORDER_ID>
 # -> { "id": "...", "customerId": "customer-123", "status": "CONFIRMED", "items": [...] }
 
+# List orders, newest first (optional ?limit=, default 50, max 200)
+curl http://localhost:8085/orders
+curl "http://localhost:8085/orders?limit=10"
+# -> { "orders": [{ "id": "...", "customerId": "...", "status": "...", ... }, ...] }
+
 # Health / readiness
 curl http://localhost:8085/health
 curl http://localhost:8085/ready

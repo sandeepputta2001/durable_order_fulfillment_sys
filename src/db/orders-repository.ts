@@ -93,6 +93,19 @@ export async function getOrderWithItems(orderId: string): Promise<OrderWithItems
   };
 }
 
+/**
+ * Lists orders newest-first. `limit` caps how many rows come back (a real
+ * "return every row ever created" endpoint doesn't scale, so this is
+ * capped rather than truly unbounded) and defaults to 50.
+ */
+export async function listOrders(limit = 50): Promise<OrderRecord[]> {
+  const result = await pool.query<OrderRow>(
+    'SELECT * FROM orders ORDER BY created_at DESC LIMIT $1',
+    [limit],
+  );
+  return result.rows.map(toOrderRecord);
+}
+
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
   await pool.query('UPDATE orders SET status = $1, updated_at = now() WHERE id = $2', [
     status,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { createOrder, getOrderWithItems } from '../../db/orders-repository';
+import { createOrder, getOrderWithItems, listOrders } from '../../db/orders-repository';
 import { logger } from '../../shared/logger';
 import { ordersCreatedTotal } from '../../shared/metrics';
 import type { CreateOrderRequest } from '../../shared/types';
@@ -8,6 +8,7 @@ import {
   createOrderBodySchema,
   createOrderResponseSchema,
   getOrderParamsSchema,
+  listOrdersQuerySchema,
 } from '../schemas/order.schema';
 import { startOrderWorkflow } from '../temporal-client';
 
@@ -38,6 +39,15 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
       const latest = await getOrderWithItems(orderId);
       reply.code(started ? 201 : 200);
       return { orderId, status: latest?.status ?? order.status };
+    },
+  );
+
+  app.get<{ Querystring: { limit?: number } }>(
+    '/orders',
+    { schema: { querystring: listOrdersQuerySchema } },
+    async (request) => {
+      const orders = await listOrders(request.query.limit);
+      return { orders };
     },
   );
 
