@@ -354,12 +354,11 @@ CI/CD pipeline.
 To enable it, create a GitHub **Environment** named `exe-dev`
 (**Settings -> Environments**) - this lets you optionally require manual
 approval before a deploy runs, which is worth turning on for a real VM -
-then add the values below under **Settings -> Secrets and variables ->
-Actions**. Only the SSH private key is actually sensitive, so it's the
-one **Secret**; everything else is a plain repository **Variable** (a
-job's `if:` condition can only read `vars`, not `secrets` - see the
-comment in `ci.yml`'s `deploy` job - which is what makes host/user/path
-variables rather than secrets here anyway):
+then add the values below as **Environment variables/secrets scoped to
+that environment** (from the environment's own page, "Add variable" /
+"Add secret" - not the repository-level tabs). Only the SSH private key
+is actually sensitive, so it's the one **Secret**; everything else is a
+plain **Variable**:
 
 | Name | Kind | Value |
 |---|---|---|
@@ -368,6 +367,16 @@ variables rather than secrets here anyway):
 | `EXE_DEV_DEPLOY_PATH` | Variable | Absolute path to the git checkout on the VM (e.g. `/home/deploy/durable-order-system`, the directory from step 4) |
 | `EXE_DEV_PORT` | Variable | Optional; SSH port, defaults to `22` |
 | `EXE_DEV_SSH_KEY` | **Secret** | A private key whose matching public key has been granted access to the VM - generate a dedicated deploy key, don't reuse your personal one |
+
+These are read inside the deploy job's steps (`${{ vars.EXE_DEV_HOST }}`,
+etc.), which only happens once the job has already been granted entry
+into the `exe-dev` Environment - so environment-scoped values work fine
+there. They would **not** work if referenced from the job's own `if:`
+condition instead, because a job's `if:` is evaluated before it enters
+its Environment, meaning environment-scoped `vars`/`secrets` aren't
+visible yet at that point (only repository/org-level ones are) - which is
+exactly why `ci.yml`'s `deploy` job gates only on the push event and
+branch, not on whether these variables happen to be set.
 
 The workflow never sees your key material beyond what `appleboy/ssh-
 action` needs to open the SSH connection for that one job run.

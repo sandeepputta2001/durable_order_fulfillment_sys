@@ -115,25 +115,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-test, docker-build]
     # Only deploy on a real merge to main (push), or a manual re-run
-    # targeted at main (workflow_dispatch, for testing right after wiring
-    # up secrets) - never on a pull request, since a PR from a fork would
-    # otherwise be able to trigger a deploy using this repo's secrets. Also
-    # only once EXE_DEV_HOST is actually configured, so this job quietly
-    # skips (instead of failing) on a fork or before exe.dev is set up,
-    # rather than putting a red X on every push to main.
+    # targeted at main (workflow_dispatch, for testing) - never on a pull
+    # request, since a PR from a fork would otherwise be able to trigger a
+    # deploy using this repo's secrets.
     #
-    # Note: a job-level `if:` can only see the `vars` context, not
-    # `secrets` (GitHub Actions rejects `secrets.*` there with "Unrecognized
-    # named-value: 'secrets'"), so the presence check below uses the
-    # non-sensitive EXE_DEV_HOST repository VARIABLE rather than a secret.
-    # None of host/user/path/port are actually sensitive - only the SSH
-    # private key is - so those four are plain repository variables
-    # (Settings -> Secrets and variables -> Actions -> Variables tab) and
-    # only EXE_DEV_SSH_KEY is a secret.
+    # Deliberately NOT also gating on "is EXE_DEV_HOST configured" here:
+    # that value lives as an EXE_DEV_HOST environment variable scoped to
+    # the exe-dev Environment (see the `environment:` key below), and a
+    # job's `if:` is evaluated before the job is granted entry into its
+    # Environment - so environment-scoped vars/secrets are never visible
+    # in this condition, only repository/org-level ones are. Since exe.dev
+    # is always configured for this repo, that extra check would only add
+    # confusion (a silent skip instead of a clear failure) for no benefit.
     if: |
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main' &&
-      vars.EXE_DEV_HOST != ''
+      github.ref == 'refs/heads/main'
     environment: exe-dev
     steps:
       - name: SSH into exe.dev VM and run the deploy script
