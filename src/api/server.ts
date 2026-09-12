@@ -4,6 +4,7 @@ import { runMigrations } from '../db/migrate';
 import { logger } from '../shared/logger';
 import { httpRequestDurationSeconds, httpRequestsTotal } from '../shared/metrics';
 import { retryConnect } from '../shared/retry-connect';
+import { registerApiDocs } from './docs';
 import { healthRoutes } from './routes/health';
 import { metricsRoutes } from './routes/metrics';
 import { orderRoutes } from './routes/orders';
@@ -28,6 +29,8 @@ export async function buildServer(): Promise<FastifyInstance> {
       'request completed',
     );
   });
+
+  await registerApiDocs(app);
 
   await app.register(orderRoutes);
   await app.register(healthRoutes);

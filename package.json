@@ -25,6 +25,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
     "@temporalio/activity": "^1.11.6",
     "@temporalio/client": "^1.11.6",
     "@temporalio/worker": "^1.11.6",

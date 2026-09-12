@@ -148,6 +148,18 @@ Workflow Execution named `order-<id>` (or your own custom order ID - see
 Activity scheduled, every attempt, every retry with backoff, every
 input/output payload.
 
+## API documentation (Swagger / OpenAPI)
+
+Open `http://localhost:8085/docs` for an interactive Swagger UI covering
+every endpoint - request/response schemas, and a "Try it out" button that
+sends real requests to this running instance. The raw OpenAPI 3.0 document
+is at `http://localhost:8085/docs/json`.
+
+This isn't hand-maintained: it's generated directly from the same
+Fastify JSON Schemas (`src/api/schemas/`) that validate every request, via
+`@fastify/swagger` (see `src/api/docs.ts`) - so the docs can't silently
+drift from what the API actually accepts.
+
 ## API examples
 
 ```bash
