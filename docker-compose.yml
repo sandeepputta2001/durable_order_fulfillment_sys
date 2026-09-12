@@ -1,0 +1,110 @@
+name: durable-order-system
+
+services:
+  # ---------------------------------------------------------------------
+  # PostgreSQL - one Postgres instance hosting two logically separate
+  # databases: `postgres` (superuser DB, used by Temporal's own schema)
+  # and `order_system` (the application's database, created by
+  # docker/postgres-init.sql on first boot).
+  # ---------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      # Host 5433 avoids clashing with a Postgres already listening on the
+      # host's 5432; the container-internal port (used by api/worker/
+      # temporal over the compose network) is still the standard 5432.
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------
+  # Temporal server, using the official auto-setup image: on first boot it
+  # creates its own `temporal`/`temporal_visibility` databases and the
+  # `default` namespace against the same Postgres instance, then runs the
+  # Temporal frontend/history/matching/worker services in one container.
+  # This is the standard lightweight way to run Temporal for local/dev use
+  # without introducing Elasticsearch or a separate schema-setup step.
+  # ---------------------------------------------------------------------
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PWD: postgres
+      POSTGRES_SEEDS: postgres
+    ports:
+      - '7233:7233'
+
+  # Web UI for inspecting Workflow Executions, Event History, retries, etc.
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: 'http://localhost:8081'
+    ports:
+      # Host 8081 -> container 8080, since host 8080 is used by the API.
+      - '8081:8080'
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node', 'dist/api/server.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://order_user:order_pass@postgres:5432/order_system
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_TASK_QUEUE: order-fulfillment
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      # Host 8085 avoids clashing with something already using host 8080;
+      # the API listens on 8080 inside the container either way.
+      - '8085:8080'
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node', 'dist/workers/order.worker.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://order_user:order_pass@postgres:5432/order_system
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_TASK_QUEUE: order-fulfillment
+      # Flip to `true` (then `docker compose up -d worker` to recreate the
+      # container with the new value) to demonstrate Temporal retrying the
+      # payment Activity - see docs/FAILURE_SCENARIOS.md.
+      PAYMENT_FAILURE_MODE: ${PAYMENT_FAILURE_MODE:-false}
+      WORKER_METRICS_PORT: 9464
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '9464:9464'
+
+volumes:
+  pgdata:
