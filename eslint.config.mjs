@@ -39,6 +39,8 @@ export default [
   },
   prettier,
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    // public/ is a plain, build-step-free browser JS/CSS/HTML bundle, not
+    // part of the TypeScript/Node codebase these rules target.
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'public/**'],
   },
 ];

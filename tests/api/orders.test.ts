@@ -108,6 +108,7 @@ describe('orders API', () => {
     // Newest first.
     expect(orders[0].id).toBe(second);
     expect(orders[1].id).toBe(first);
+    expect(orders[0].itemCount).toBe(1);
   });
 
   it('caps the orders list at the requested limit', async () => {

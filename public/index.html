@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Durable Order Fulfillment System</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">⏱</span>
+        <div>
+          <h1>Durable Order Fulfillment</h1>
+          <p class="tagline">Temporal-orchestrated order processing, live</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="status-pill" id="system-status" title="Polls /ready">
+          <span class="dot" id="status-dot"></span>
+          <span id="status-text">Checking…</span>
+        </div>
+        <nav class="quick-links">
+          <a href="/docs" target="_blank" rel="noopener">API Docs</a>
+          <a href="/metrics" target="_blank" rel="noopener">Metrics</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card create-card">
+        <h2>Create an order</h2>
+        <p class="card-sub">
+          Starts a durable <code>orderFulfillmentWorkflow</code> Temporal Workflow with Workflow
+          ID&nbsp;=&nbsp;order&nbsp;ID.
+        </p>
+
+        <form id="order-form">
+          <label class="field">
+            <span>Customer ID</span>
+            <input type="text" id="customerId" placeholder="customer-123" required />
+          </label>
+
+          <div class="items-header">
+            <span>Items</span>
+            <button type="button" id="add-item" class="btn-ghost">+ Add item</button>
+          </div>
+          <div id="items" class="items"></div>
+
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <span id="submit-label">Create Order</span>
+          </button>
+          <div id="form-feedback" class="feedback" role="status"></div>
+        </form>
+
+        <div class="hint">
+          <strong>Try the failure demo:</strong> flip <code>PAYMENT_FAILURE_MODE</code> on the
+          Worker, create an order, then watch it retry below before it recovers or fails - see
+          <code>docs/FAILURE_SCENARIOS.md</code>.
+        </div>
+      </section>
+
+      <section class="card orders-card">
+        <div class="orders-header">
+          <h2>Orders</h2>
+          <div class="orders-header-right">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span class="muted">live, updates every 3s</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr class="empty-row">
+                <td colspan="5">No orders yet - create one to see it appear here.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="detail-overlay" class="overlay" hidden>
+      <div class="detail-card" role="dialog" aria-modal="true">
+        <button class="detail-close" id="detail-close" aria-label="Close">×</button>
+        <h3 id="detail-title">Order</h3>
+        <dl class="detail-grid" id="detail-body"></dl>
+      </div>
+    </div>
+
+    <footer class="foot">
+      Durable Order Fulfillment System POC &middot; Temporal + Fastify + PostgreSQL &middot;
+      <a href="/docs" target="_blank" rel="noopener">OpenAPI</a>
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -32,6 +32,11 @@ export interface OrderWithItems extends OrderRecord {
   items: OrderItemRecord[];
 }
 
+/** OrderRecord plus a line-item count, for list views that don't need full item detail. */
+export interface OrderSummary extends OrderRecord {
+  itemCount: number;
+}
+
 /**
  * Input passed from the API into the Temporal workflow. Kept separate from
  * OrderRecord because the workflow only needs the data required to run the

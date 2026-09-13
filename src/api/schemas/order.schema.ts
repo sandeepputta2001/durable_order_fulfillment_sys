@@ -35,6 +35,7 @@ const orderSummarySchema = {
     },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
+    itemCount: { type: 'integer', description: 'Number of line items on the order' },
   },
 } as const;
 

@@ -140,6 +140,21 @@ make logs   # docker compose logs -f
 make down   # docker compose down
 ```
 
+## Web dashboard
+
+Open `http://localhost:8085/` for a live dashboard: a form to create
+orders, and a table of all orders that auto-refreshes every 3 seconds and
+flashes a row when its status changes - the fastest way to *watch* the
+failure-simulation demo (see `docs/FAILURE_SCENARIOS.md`) happen instead
+of polling `curl` by hand. Click a row for full order/line-item detail.
+
+It's a single static bundle (`public/index.html` + `styles.css` +
+`app.js`) with no build step and no framework, served directly by the API
+via `@fastify/static` - it just calls the same REST API documented at
+`/docs` over `fetch()`. This keeps the "boring technology" approach
+consistent: one more Fastify route, not a second toolchain to build and
+deploy.
+
 ## Temporal UI
 
 Open `http://localhost:8081`. Every order you create shows up as a

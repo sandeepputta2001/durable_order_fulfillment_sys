@@ -5,6 +5,7 @@ import type {
   OrderItemRecord,
   OrderRecord,
   OrderStatus,
+  OrderSummary,
   OrderWithItems,
 } from '../shared/types';
 
@@ -14,6 +15,10 @@ interface OrderRow {
   status: OrderStatus;
   created_at: Date;
   updated_at: Date;
+}
+
+interface OrderSummaryRow extends OrderRow {
+  item_count: string;
 }
 
 interface OrderItemRow {
@@ -94,16 +99,26 @@ export async function getOrderWithItems(orderId: string): Promise<OrderWithItems
 }
 
 /**
- * Lists orders newest-first. `limit` caps how many rows come back (a real
- * "return every row ever created" endpoint doesn't scale, so this is
- * capped rather than truly unbounded) and defaults to 50.
+ * Lists orders newest-first, with each order's line-item count (for list
+ * views that don't need full item detail - see getOrderWithItems for
+ * that). `limit` caps how many rows come back (a real "return every row
+ * ever created" endpoint doesn't scale, so this is capped rather than
+ * truly unbounded) and defaults to 50.
  */
-export async function listOrders(limit = 50): Promise<OrderRecord[]> {
-  const result = await pool.query<OrderRow>(
-    'SELECT * FROM orders ORDER BY created_at DESC LIMIT $1',
+export async function listOrders(limit = 50): Promise<OrderSummary[]> {
+  const result = await pool.query<OrderSummaryRow>(
+    `SELECT o.*, count(oi.id) AS item_count
+     FROM orders o
+     LEFT JOIN order_items oi ON oi.order_id = o.id
+     GROUP BY o.id
+     ORDER BY o.created_at DESC
+     LIMIT $1`,
     [limit],
   );
-  return result.rows.map(toOrderRecord);
+  return result.rows.map((row) => ({
+    ...toOrderRecord(row),
+    itemCount: Number(row.item_count),
+  }));
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {

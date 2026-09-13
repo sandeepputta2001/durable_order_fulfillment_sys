@@ -1,3 +1,5 @@
+import path from 'node:path';
+import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { config } from '../config/config';
 import { runMigrations } from '../db/migrate';
@@ -35,6 +37,15 @@ export async function buildServer(): Promise<FastifyInstance> {
   await app.register(orderRoutes);
   await app.register(healthRoutes);
   await app.register(metricsRoutes);
+
+  // The dashboard (public/index.html, styles.css, app.js) - a static,
+  // build-step-free UI that talks to the same REST API over fetch(). Runs
+  // from process.cwd() so it resolves the same way whether the process is
+  // started from the repo root (dev) or from Docker's WORKDIR (prod) - see
+  // Dockerfile, which COPYs public/ into the production image.
+  await app.register(fastifyStatic, {
+    root: path.join(process.cwd(), 'public'),
+  });
 
   return app;
 }
